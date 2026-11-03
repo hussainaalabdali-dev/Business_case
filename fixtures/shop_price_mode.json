@@ -1,0 +1,379 @@
+{
+ "overrides": {
+  "ShopValMode": 0
+ },
+ "inputs": {
+  "Absorb": {
+   "conservative": 38,
+   "base": 32,
+   "optimistic": 26
+  },
+  "AvgUnit": 180,
+  "BasePct": 0.9,
+  "BasePerim": 270,
+  "BrokerPct": 0.025,
+  "CapRate": 0.07,
+  "ConBase": 24,
+  "ContPct": 0.07,
+  "CostFactor": {
+   "conservative": 1.15,
+   "base": 1,
+   "optimistic": 0.92
+  },
+  "CostMode": 0,
+  "CostShock": 0,
+  "Coverage": 0.6,
+  "DelayCostPct": 0.003,
+  "DelayM": 0,
+  "DesignPct": 0.05,
+  "DevFeePct": 0.05,
+  "DiscRate": 0.18,
+  "DMFeePct": 0.06,
+  "DownPct": 0.1,
+  "EarlyRec": 1,
+  "EffMezz": 0.9,
+  "EffRes": 0.85,
+  "EffShop": 0.95,
+  "Escrow": 1,
+  "ExcDepth": 4.5,
+  "ExtWorks": 1500000,
+  "FacadeA": 4900,
+  "FAR": 14000,
+  "FinRate": 0,
+  "GlassPct": 0.3,
+  "IncCap": {
+   "conservative": 0.08,
+   "base": 0.075,
+   "optimistic": 0.07
+  },
+  "IncDisc": 0.1,
+  "IncVac": 0.1,
+  "LandArea": 4599.95,
+  "LandMkt": 11000,
+  "LandValue": 60000000,
+  "Launch": 4,
+  "MezzPct": 1,
+  "MezzUplift": {
+   "conservative": 0.15,
+   "base": 0.25,
+   "optimistic": 0.35
+  },
+  "MktPct": 0.035,
+  "Occ": 0.8,
+  "OHPPct": 0.1,
+  "OpexPct": 0.25,
+  "OwnShareFix": 0.5,
+  "ParkM2": 32,
+  "PermitPct": 0.01,
+  "PrelimPct": 0.08,
+  "PreM": 3,
+  "PriceRes": {
+   "conservative": 11500,
+   "base": 13000,
+   "optimistic": 15000
+  },
+  "PriceShop": {
+   "conservative": 14000,
+   "base": 16000,
+   "optimistic": 18000
+  },
+  "ProjName": "أبحر الجنوبية",
+  "RaftT": 0.9,
+  "RateAbove": 3200,
+  "RateBase": 3000,
+  "RateGP": 1800,
+  "RentBasis": 1,
+  "RentInc": {
+   "conservative": 945,
+   "base": 1076,
+   "optimistic": 1221
+  },
+  "RentMezz": 1076,
+  "RentRes": 850,
+  "RentShop": 1076,
+  "ResFloors": 9,
+  "RETTPct": 0.05,
+  "RevShock": 0,
+  "Scen": 2,
+  "ShareMode": 1,
+  "ShopAbs": 6,
+  "ShopGFA": 750,
+  "ShopsInKind": 0,
+  "ShopValMode": 0,
+  "TgtMargin": 0.2,
+  "VATNR": {
+   "conservative": 0.15,
+   "base": 0,
+   "optimistic": 0
+  },
+  "_boq": [
+   {
+    "code": "أ1",
+    "item": "حفر البدروم ونقل المخلفات",
+    "qty_formula": "=BaseGFA*ExcDepth",
+    "unit": "م³",
+    "rate": 45
+   },
+   {
+    "code": "أ2",
+    "item": "سند جوانب الحفر",
+    "qty_formula": "=BasePerim*(ExcDepth+0.5)",
+    "unit": "م²",
+    "rate": 1300
+   },
+   {
+    "code": "أ3",
+    "item": "نزح المياه الجوفية",
+    "qty_formula": 1,
+    "unit": "مقطوع",
+    "rate": 1500000
+   },
+   {
+    "code": "أ4",
+    "item": "لبشة الأساسات (خرسانة + حديد + شدات)",
+    "qty_formula": "=BaseGFA*RaftT",
+    "unit": "م³",
+    "rate": 1750
+   },
+   {
+    "code": "أ5",
+    "item": "جدران البدروم الخرسانية",
+    "qty_formula": "=BasePerim*ExcDepth*0.4",
+    "unit": "م³",
+    "rate": 1850
+   },
+   {
+    "code": "أ6",
+    "item": "العزل المائي للبدروم",
+    "qty_formula": "=BaseGFA+BasePerim*ExcDepth",
+    "unit": "م²",
+    "rate": 180
+   },
+   {
+    "code": "ب1",
+    "item": "الهيكل فوق الأرض (أعمدة وبلاطات وجسور ونواة)",
+    "qty_formula": "=FAR+GPGFA",
+    "unit": "م² مسطح",
+    "rate": 560
+   },
+   {
+    "code": "ج1",
+    "item": "البلك (جدران خارجية وداخلية)",
+    "qty_formula": "=FAR*1.2",
+    "unit": "م² جدار",
+    "rate": 85
+   },
+   {
+    "code": "ج2",
+    "item": "واجهة زجاجية (الجهة البحرية)",
+    "qty_formula": "=FacadeA*GlassPct",
+    "unit": "م² واجهة",
+    "rate": 1400
+   },
+   {
+    "code": "ج3",
+    "item": "واجهة كلادينج أو حجر",
+    "qty_formula": "=FacadeA*(1-GlassPct)",
+    "unit": "م² واجهة",
+    "rate": 450
+   },
+   {
+    "code": "ج4",
+    "item": "نوافذ ألمنيوم",
+    "qty_formula": "=FacadeA*(1-GlassPct)*0.15",
+    "unit": "م²",
+    "rate": 900
+   },
+   {
+    "code": "ج5",
+    "item": "عزل الأسطح",
+    "qty_formula": "=LandArea*Coverage",
+    "unit": "م²",
+    "rate": 150
+   },
+   {
+    "code": "د1",
+    "item": "أرضيات بورسلان مستورد (سكني)",
+    "qty_formula": "=ResGFA",
+    "unit": "م²",
+    "rate": 250
+   },
+   {
+    "code": "د2",
+    "item": "لياسة ودهانات (سكني)",
+    "qty_formula": "=ResGFA*3",
+    "unit": "م² جدار",
+    "rate": 80
+   },
+   {
+    "code": "د3",
+    "item": "أسقف جبس (سكني)",
+    "qty_formula": "=ResGFA",
+    "unit": "م²",
+    "rate": 90
+   },
+   {
+    "code": "د4",
+    "item": "أبواب داخلية",
+    "qty_formula": "=ResGFA/15",
+    "unit": "باب",
+    "rate": 2000
+   },
+   {
+    "code": "د5",
+    "item": "مطابخ",
+    "qty_formula": "=Units",
+    "unit": "مطبخ",
+    "rate": 45000
+   },
+   {
+    "code": "د6",
+    "item": "دورات مياه",
+    "qty_formula": "=Units*3",
+    "unit": "دورة",
+    "rate": 18000
+   },
+   {
+    "code": "د7",
+    "item": "المعارض والميزانين (هيكل جاهز للمشتري)",
+    "qty_formula": "=ShopGFA+MezzGFA",
+    "unit": "م²",
+    "rate": 300
+   },
+   {
+    "code": "د8",
+    "item": "تشطيب المواقف (إيبوكسي وتخطيط)",
+    "qty_formula": "=BaseGFA+GPGFA",
+    "unit": "م²",
+    "rate": 90
+   },
+   {
+    "code": "هـ1",
+    "item": "التكييف",
+    "qty_formula": "=ResGFA/25+(ShopGFA+MezzGFA)/20",
+    "unit": "طن تبريد",
+    "rate": 4500
+   },
+   {
+    "code": "هـ2",
+    "item": "تهوية البدروم وطرد الدخان",
+    "qty_formula": "=BaseGFA",
+    "unit": "م²",
+    "rate": 100
+   },
+   {
+    "code": "هـ3",
+    "item": "الكهرباء والتيار الخفيف (فوق الأرض)",
+    "qty_formula": "=FAR",
+    "unit": "م²",
+    "rate": 280
+   },
+   {
+    "code": "هـ4",
+    "item": "كهرباء وإنارة المواقف",
+    "qty_formula": "=BaseGFA+GPGFA",
+    "unit": "م²",
+    "rate": 80
+   },
+   {
+    "code": "هـ5",
+    "item": "محطة كهرباء وتوصيل الشركة",
+    "qty_formula": 1,
+    "unit": "مقطوع",
+    "rate": 1200000
+   },
+   {
+    "code": "هـ6",
+    "item": "السباكة والصرف والخزانات والمضخات",
+    "qty_formula": "=FAR",
+    "unit": "م²",
+    "rate": 180
+   },
+   {
+    "code": "هـ7",
+    "item": "الإطفاء والإنذار (رشاشات)",
+    "qty_formula": "=FAR+BaseGFA+GPGFA",
+    "unit": "م²",
+    "rate": 120
+   },
+   {
+    "code": "و1",
+    "item": "مصاعد ركاب (11 وقفة)",
+    "qty_formula": 3,
+    "unit": "مصعد",
+    "rate": 350000
+   },
+   {
+    "code": "و2",
+    "item": "مصعد خدمة وطوارئ",
+    "qty_formula": 1,
+    "unit": "مصعد",
+    "rate": 400000
+   },
+   {
+    "code": "ز2",
+    "item": "أعمال خارجية وتوصيلات",
+    "qty_formula": 1,
+    "unit": "مقطوع",
+    "rate": "=ExtWorks"
+   }
+  ]
+ },
+ "expected": {
+  "RevRes": 138125000,
+  "RevShop": 11400000,
+  "RevMezz": 2850000,
+  "RevTot": 152375000,
+  "ResGFA": 12500,
+  "ResSell": 10625,
+  "BaseGFA": 4139.955,
+  "GPGFA": 2009.97,
+  "HardBase": 70821765.86265,
+  "HardRaw": 70821765.86265,
+  "Hard": 70821765.86265,
+  "DesignC": 3541088.2931325,
+  "PermitC": 708217.6586265,
+  "ContC": 4957523.6103855,
+  "MktC": 5333125,
+  "RETTC": 3000000,
+  "DevFeeC": 4001429.77123973,
+  "DevCost": 92363150.1960342,
+  "TotCost": 152363150.196034,
+  "Profit": 11849.8039657772,
+  "Margin": 7.77734245487239e-05,
+  "DistM": 36,
+  "ConM": 24,
+  "InvE": 15927627.4332351,
+  "OwnDraw": 60000000,
+  "PotP": 15939477.2372008,
+  "OwnRem": 0,
+  "PoolProfit": 11849.8039657902,
+  "OwnShare": 0.393796005942398,
+  "OwnerFinal": 4666.40547292857,
+  "InvFinal": 15934810.8317279,
+  "LandCash": 60000000,
+  "IncShopVal": 17431200,
+  "CostFactor": 1,
+  "PriceRes": 13000,
+  "PriceShop": 16000,
+  "Units": 59.0277777777778,
+  "project_irr": 7.76707255376596e-05,
+  "project_npv": -20891341.5041016,
+  "investor_irr": 0.000205233054218823,
+  "equity_multiple": 1.00045100241847,
+  "owner_multiple": 1.00007777342455,
+  "payback_month": 36,
+  "breakeven_res_price": 12998.8442739198,
+  "breakeven_sales_pct": 0.999922232623686,
+  "max_land_margin": 35824777.5910785,
+  "dev_fee": 4001429.77123973,
+  "dev_partner_net": 4008613.16973258,
+  "dev_partner_irr": 0.129370656001296,
+  "finance_cost": 0,
+  "dev_partner_net_after_fin": 4008613.16973258,
+  "max_land_irr_12": 45557250.647820845,
+  "max_land_irr_15": 42704635.398452185,
+  "max_land_irr_18": 40090497.42318421,
+  "max_land_irr_20": 38467542.628896356
+ }
+}
