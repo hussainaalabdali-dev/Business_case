@@ -1,0 +1,11 @@
+# Hot reload for `make dev`.
+services:
+  api:
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload",
+              "--reload-dir", "/srv/api/app", "--reload-dir", "/srv/engine/feasibility_engine", "--no-access-log"]
+    environment:
+      PYTHONPATH: /srv/engine
+    volumes:
+      - ./api/app:/srv/api/app
+      - ./engine/feasibility_engine:/srv/engine/feasibility_engine
+    ports: ["8000:8000"]

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>تجربة تقرير PDF — {{ inp.ProjName }}</title>
+<style>
+{{ fonts | safe }}
+@page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #fff; color: #1d2433; }
+body { font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 10.5pt; line-height: 1.75; }
+h1 { font-size: 20pt; font-weight: 700; margin: 0 0 2mm; color: #0f3d3e; }
+h2 { break-after: avoid; font-size: 13pt; font-weight: 700; margin: 7mm 0 2mm; color: #0f3d3e; border-bottom: 1.5px solid #0f3d3e; padding-bottom: 1mm; }
+.sub { color: #5b6475; margin-bottom: 5mm; }
+.num { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; display: inline-block; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3mm; }
+.kpi { border: 1px solid #d5dae3; border-radius: 2mm; padding: 2.5mm 3mm; }
+.kpi .l { font-size: 8.5pt; color: #5b6475; }
+.kpi .v { font-size: 14pt; font-weight: 700; }
+table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+th, td { border-bottom: 1px solid #e3e7ee; padding: 1.4mm 2mm; text-align: right; }
+th { background: #eef2f6; font-weight: 600; }
+td.n, th.n { text-align: left; }
+tr { break-inside: avoid; }
+.neg { color: #b42318; }
+p { text-align: justify; margin: 0 0 2.5mm; }
+.chart text { font-family: 'IBM Plex Sans Arabic', sans-serif; font-size: 8pt; fill: #5b6475; }
+.footer { margin-top: 8mm; border-top: 1px solid #d5dae3; padding-top: 2mm; font-size: 8.5pt; color: #5b6475; display: flex; justify-content: space-between; }
+.verdict { display: inline-block; padding: 0.5mm 3mm; border-radius: 1.5mm; background: #fff4e5; color: #8a4b00; font-weight: 700; }
+</style>
+</head>
+<body>
+<h1>{{ inp.ProjName }} — تجربة مذكرة لجنة الاستثمار</h1>
+<div class="sub">صفحة تجربة للمرحلة الأولى: التحقق من اتصال الحروف العربية، واتجاه الصفحة، والأرقام، والجداول، والرسم. كل الأرقام من المحرك على مدخلات مثال أبحر (افتراضات).</div>
+
+<div class="kpis">
+  <div class="kpi"><div class="l">إجمالي الإيرادات (مليون ريال)</div><div class="v num">{{ r.RevTot | millions }}</div></div>
+  <div class="kpi"><div class="l">إجمالي التكلفة (مليون ريال)</div><div class="v num">{{ r.TotCost | millions }}</div></div>
+  <div class="kpi"><div class="l">صافي الربح (مليون ريال)</div><div class="v num">{{ r.Profit | millions }}</div></div>
+  <div class="kpi"><div class="l">الهامش على التكلفة</div><div class="v num">{{ r.Margin | pct }}</div></div>
+  <div class="kpi"><div class="l">IRR المشروع</div><div class="v num">{{ r.project_irr | pct }}</div></div>
+  <div class="kpi"><div class="l">IRR الشريك المطوّر</div><div class="v num">{{ r.dev_partner_irr | pct }}</div></div>
+  <div class="kpi"><div class="l">رأس مال المستثمر (مليون ريال)</div><div class="v num">{{ r.InvE | millions }}</div></div>
+  <div class="kpi"><div class="l">أقصى سعر للأرض عند IRR ‏18% (مليون)</div><div class="v num">{{ r.max_land_irr_18 | millions }}</div></div>
+</div>
+
+<h2>الفكرة الاستثمارية</h2>
+<p>تقع الأرض في حي أبحر الجنوبية شمال مدينة جدة، بمساحة <span class="num">{{ inp.LandArea | amount }}</span> متر مربع، ويُقترح تطويرها مبنى سكنياً للبيع على الخارطة مع معارض تجارية على الشارع الرئيسي. يدخل مالك الأرض شريكاً بحصة عينية قيمتها <span class="num">{{ inp.LandValue | millions }}</span> مليون ريال، ويتولى المطوّر التصميم والترخيص والتنفيذ والتسويق مقابل أتعاب تطوير ونصيب من الربح. يبدأ البيع في الشهر <span class="num">{{ inp.Launch }}</span>، وتُحصَّل الدفعات من حساب الضمان بحسب نسبة الإنجاز، وتنتهي التوزيعات في الشهر <span class="num">{{ r.DistM }}</span>.</p>
+<p>الهامش المتوقع في السيناريو الأساسي أقل بكثير من الهامش المستهدف، والسبب الرئيسي ارتفاع قيمة الأرض مقارنة بأسعار البيع الحالية في الحي، إضافة إلى الاسترداد المبكر للمالك الذي ينقل مخاطر الخسارة إلى المستثمر. لذلك يوصى بإعادة التفاوض على قيمة الأرض أو على شرط الاسترداد المبكر قبل التوقيع، وبالتحقق من أسعار الصفقات الفعلية في وزارة العدل قبل اعتماد سعر البيع.</p>
+<p>القرار السريع على الهامش: <span class="verdict">{{ 'إعادة تفاوض' if r.Margin >= 0 else 'لا يُنصح' }}</span> (نص تجريبي — القرار الكامل في المرحلة الثانية).</p>
+
+<h2>مركز المستثمر التراكمي شهرياً (مليون ريال)</h2>
+<svg class="chart" width="100%" viewBox="0 -12 {{ chart.w + 60 }} {{ chart.h + 30 }}" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(0,0)">
+  {% for b in chart.bars %}
+    <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="{{ '#d9534f' if b.neg else '#1f7a6d' }}"/>
+  {% endfor %}
+    <line x1="0" x2="{{ chart.w }}" y1="{{ chart.zero_y }}" y2="{{ chart.zero_y }}" stroke="#1d2433" stroke-width="0.8"/>
+    <text x="{{ chart.w + 4 }}" y="{{ chart.zero_y + 3 }}" text-anchor="start" direction="ltr">0</text>
+    <text x="{{ chart.w + 4 }}" y="6" text-anchor="start" direction="ltr">{{ chart.hi | millions }}</text>
+    <text x="{{ chart.w + 4 }}" y="{{ chart.h }}" text-anchor="start" direction="ltr">{{ chart.lo | millions }}</text>
+    <text x="{{ chart.w }}" y="{{ chart.h + 14 }}" text-anchor="end">الشهر 0</text>
+    <text x="0" y="{{ chart.h + 14 }}" text-anchor="end" direction="rtl">الشهر {{ r.DistM }}</text>
+  </g>
+</svg>
+
+<h2>اختبار الضغط (22 اختباراً)</h2>
+<table>
+  <thead><tr><th>#</th><th>الاختبار</th><th class="n">الربح (مليون)</th><th class="n">الهامش</th><th class="n">IRR المشروع</th><th class="n">صافي المطوّر بعد التمويل (مليون)</th><th class="n">مضاعف المالك</th></tr></thead>
+  <tbody>
+  {% for s in stress %}
+    <tr>
+      <td class="num">{{ s.n }}</td><td>{{ s.label | isonum }}</td>
+      <td class="n"><span class="num {{ 'neg' if s.Profit < 0 }}">{{ s.Profit | millions }}</span></td>
+      <td class="n"><span class="num {{ 'neg' if s.Margin < 0 }}">{{ s.Margin | pct }}</span></td>
+      <td class="n"><span class="num">{{ s.project_irr | pct }}</span></td>
+      <td class="n"><span class="num">{{ s.dev_partner_net_after_fin | millions }}</span></td>
+      <td class="n"><span class="num">{{ '%.2f' % s.owner_multiple if s.owner_multiple is not none else '—' }}×</span></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+
+<h2>نص عربي طويل لاختبار التشكيل والالتفاف</h2>
+<p>تُعدّ دراسة الجدوى أداةً لاتخاذ القرار، لا شهادةً على قيمة العقار. فهي تجمع افتراضات السوق — كأسعار البيع والإيجار ومعدّلات الاستيعاب — مع تكاليف البناء وجدول التنفيذ وشروط الشراكة، ثم تقيس أثر كل افتراض على العائد. ولأن الافتراضات تتغيّر، فإن قيمة الدراسة الحقيقية في اختبار الضغط: ماذا يحدث لو انخفضت الأسعار عشرة في المئة؟ أو تأخّر التنفيذ ستة أشهر؟ أو ارتفعت تكلفة التمويل؟ الإجابة عن هذه الأسئلة قبل التوقيع هي ما يحمي المطوّر من الالتزام بأرض لا تحتمل أسوأ الاحتمالات المعقولة.</p>
+<p>اختبار حروف وعلامات: «الاستيعاب»، و«المعارض العينية»، و«الاسترداد المبكر»؛ أرقام داخل النص: <span class="num">1,234,567.8</span> ريال، ونسبة <span class="num">12.5%</span>، وتاريخ <span class="num">2026-11-03</span>؛ ومصطلحات إنجليزية داخل السطر مثل IRR وNPV وBOQ دون أن ينقلب ترتيب الجملة.</p>
+
+<div class="footer">
+  <span>دراسة جدوى لأغراض اتخاذ القرار وليست تقييماً عقارياً معتمداً</span>
+  <span>تاريخ الإنشاء: <span class="num">{{ created }}</span></span>
+</div>
+</body>
+</html>
