@@ -257,19 +257,34 @@ For each share `s` in `[0.3, 0.4, 0.5, 0.6, 0.7]`, replace `OwnShare` with `s` i
 - `owner_gain = OwnerFinal(s) + OwnDraw + ShopsInKind*(RevShop+RevMezz) - LandValue`
 
 ## 11. Sensitivity and stress (v1 = full re-runs)
-The Excel uses closed-form approximations. The website must re-run the full engine for every cell:
-- **Grid A:** profit for `PriceRes(base) ∈ {11500,12500,13000,14000,15000,16000}` × `CostFactor ∈ {0.9,1.0,1.1,1.2,1.3}`.
-- **Grid B:** margin for `LandValue ∈ user list (default ±25% around input)` × `PriceRes`.
-- **Stress set:**
-  - `RevShock ∈ {-0.1,-0.2,-0.3}`
-  - `CostShock ∈ {0.1,0.2,0.3}`
-  - `DelayM ∈ {6,12,18}`
-  - `FinRate ∈ {0.07,0.09,0.11}`
-  - combined `{-0.1, +0.1, 6}`
-  - scenarios 1 and 3
-  - `EarlyRec=0` variants
+The Excel uses closed-form approximations. The website must re-run the full engine for every cell and every stress test. Each run uses the current inputs with only the listed changes applied.
 
-  Report Profit, Margin, project_irr, project_npv, InvE, dev_partner_net_after_fin, dev_partner_irr and owner_multiple for each.
+### 11.1 Grids
+- **PriceRes values (both grids):** `[11500, 12500, 13000, 14000, 15000, 16000]`. Each value replaces the active scenario's `PriceRes` **before** `RevShock` is applied.
+- **Grid A:** `Profit` for PriceRes × `CostFactor ∈ [0.9, 1.0, 1.1, 1.2, 1.3]`. Each value replaces the active scenario's `CostFactor` **before** `CostShock` is applied.
+- **Grid B:** `Margin` for PriceRes × `LandValue ∈ round(LandValue_input × [0.75, 0.83, 0.88, 0.92, 1.00], -6)` (Abhur: 45, 50, 53, 55, 60 M). The user can edit the LandValue list in the UI.
+
+### 11.2 Stress set (exactly 22 tests, in this order)
+| # | Changes |
+|---|---|
+| 1 | Base (no change) |
+| 2–4 | `RevShock` = −0.10 / −0.20 / −0.30 |
+| 5–7 | `CostShock` = +0.10 / +0.20 / +0.30 |
+| 8–10 | `DelayM` = 6 / 12 / 18 |
+| 11–13 | `FinRate` = 0.07 / 0.09 / 0.11 |
+| 14 | Combined: `RevShock=-0.10`, `CostShock=+0.10`, `DelayM=6` |
+| 15 | `Scen=1` (conservative) |
+| 16 | `Scen=3` (optimistic) |
+| 17 | `Scen=1`, `EarlyRec=0` |
+| 18 | `Scen=1`, `EarlyRec=0`, `ShopsInKind=1` |
+| 19 | Combined (14) + `EarlyRec=0` |
+| 20–22 | `LandValue = round(LandValue_input × 0.83 / 0.87 / 0.92, -6)` (Abhur 60 M → 50 / 52 / 55 M) |
+
+`EarlyRec=0` variants are tests 17, 18 and 19 only.
+
+Report `Profit`, `Margin`, `project_irr`, `project_npv`, `InvE`, `dev_partner_net_after_fin`, `dev_partner_irr` and `owner_multiple` for each test. An IRR with no root is `null`.
+
+Acceptance: for Abhur, stress tests that share their overrides with a fixture must match it (1 = `base`, 2 = `rev_minus10`, 6 = `cost_plus20`, 9 = `delay12`, 12 = `finance9`, 15 = `conservative`, 16 = `optimistic`).
 
 Note: Excel grids hold `LandValue` fixed. Small differences between the closed-form grid and full re-runs are expected and accepted; full re-run is the correct one.
 

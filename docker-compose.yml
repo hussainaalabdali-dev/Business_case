@@ -1,0 +1,61 @@
+name: feasibility
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: feasibility
+      POSTGRES_USER: ${POSTGRES_USER:-feasibility}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-feasibility} -d feasibility"]
+      interval: 5s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+      platforms: [linux/amd64, linux/arm64]
+    image: feasibility-api:latest
+    # Chromium for PDF runs inside this service; 1 GB cap until the VPS specs are confirmed.
+    mem_limit: 1g
+    shm_size: 256m
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      retries: 5
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      platforms: [linux/amd64, linux/arm64]
+    image: feasibility-web:latest
+    environment:
+      API_URL: http://api:8000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-feasibility}:${POSTGRES_PASSWORD}@db:5432/feasibility
+    depends_on:
+      db: { condition: service_healthy }
+      api: { condition: service_healthy }
+    ports: ["3000:3000"]
+    restart: unless-stopped
+
+  ingest:
+    build:
+      context: .
+      dockerfile: ingest/Dockerfile
+      platforms: [linux/amd64, linux/arm64]
+    image: feasibility-ingest:latest
+    profiles: ["jobs"]   # one-shot, started by n8n: docker compose --profile jobs run ingest
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-feasibility}:${POSTGRES_PASSWORD}@db:5432/feasibility
+    depends_on:
+      db: { condition: service_healthy }
+
+volumes:
+  db-data:
