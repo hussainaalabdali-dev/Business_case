@@ -68,7 +68,11 @@ def test_perf_budgets() -> None:
     """ROADMAP M1: /engine/run < 300 ms, /engine/stress < 3 s (measured in-process, p95)."""
     run_p95 = _p95(lambda: client.post("/engine/run", json={"inputs": BASE["inputs"]}), 20)
     stress_max = _p95(lambda: client.post("/engine/stress", json=BASE["inputs"]), 3)
-    print(f"\n/engine/run p95={run_p95 * 1000:.0f} ms, /engine/stress max={stress_max:.2f} s")
+    line = f"/engine/run p95={run_p95 * 1000:.0f} ms, /engine/stress (22 tests) max={stress_max:.2f} s"
+    print("\n" + line)
+    if summary := os.environ.get("GITHUB_STEP_SUMMARY"):
+        with open(summary, "a", encoding="utf-8") as fh:
+            fh.write(f"### Performance\n{line}\n")
     assert run_p95 < 0.3
     assert stress_max < 3.0
 
@@ -79,3 +83,18 @@ def test_pdf_demo() -> None:
     r = client.post("/pdf/demo", json=BASE["inputs"])
     assert r.status_code == 200
     assert r.content[:5] == b"%PDF-"
+
+
+def test_no_irr_is_null_in_api() -> None:
+    cons = json.loads((ROOT / "fixtures/conservative.json").read_text(encoding="utf-8"))
+    r = client.post("/engine/run", json={"inputs": cons["inputs"], "include_monthly": False}).json()["result"]
+    assert r["dev_partner_irr"] is None
+
+
+def test_report_shows_no_irr_label() -> None:
+    from feasibility_engine import EngineInputs
+
+    from app.pdf import render_demo_html
+
+    html = render_demo_html(EngineInputs.model_validate(BASE["inputs"]))
+    assert "-100" not in html and "لا يوجد*" in html and "التدفقات لا تسترد رأس المال" in html

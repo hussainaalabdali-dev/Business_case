@@ -247,6 +247,7 @@ class StressRow(BaseModel):
     dev_partner_net_after_fin: float
     dev_partner_irr: float | None
     owner_multiple: float | None
+    equity_multiple: float
 
 
 class StressResult(BaseModel):

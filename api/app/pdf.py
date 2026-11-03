@@ -11,7 +11,7 @@ from feasibility_engine import EngineInputs, run, run_stress
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from markupsafe import Markup, escape
 
-from .fmt import amount, millions, pct
+from .fmt import NO_IRR_NOTE, amount, irr, millions, pct
 
 HERE = Path(__file__).parent
 _env = Environment(loader=FileSystemLoader(HERE / "templates"), autoescape=select_autoescape(["html"]))
@@ -23,7 +23,8 @@ def isolate_numbers(text: str) -> Markup:
     return Markup(_NUM_RUN.sub(lambda m: f'<span class="num">{escape(m.group(0))}</span>', str(escape(text))))
 
 
-_env.filters.update(millions=millions, amount=amount, pct=pct, isonum=isolate_numbers)
+_env.filters.update(millions=millions, amount=amount, pct=pct, irr=irr, isonum=isolate_numbers)
+_env.globals["NO_IRR_NOTE"] = NO_IRR_NOTE
 
 
 @cache

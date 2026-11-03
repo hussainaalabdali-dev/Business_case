@@ -60,3 +60,10 @@ def test_decision_base() -> None:
     d = decide(inp, run(inp), licence=1)
     assert d.quick_verdict == "RENEGOTIATE"
     assert decide(inp, run(inp), licence=0).decision == "HOLD"
+
+
+def test_no_recovery_irr_is_null() -> None:
+    """Conservative case: dev partner flows never recover capital -> IRR is null (not -100%)."""
+    r = run(load("conservative.json")["inputs"])
+    assert r.dev_partner_irr is None
+    assert r.dev_partner_net < 0

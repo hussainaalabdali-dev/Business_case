@@ -14,6 +14,13 @@ _BINOPS: dict[type[ast.operator], Callable[[float, float], float]] = {
 }
 
 
+# ENGINE_SPEC §4.1: the only variables a BOQ quantity or rate may reference.
+BOQ_VARIABLES = frozenset({
+    "BaseGFA", "ExcDepth", "BasePerim", "RaftT", "FAR", "GPGFA", "FacadeA", "GlassPct", "LandArea", "Coverage",
+    "ResGFA", "Units", "ShopGFA", "MezzGFA", "ExtWorks",
+})
+
+
 class FormulaError(ValueError):
     pass
 
@@ -24,7 +31,7 @@ def _eval(node: ast.AST, env: Mapping[str, float]) -> float:
     if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)) and not isinstance(node.value, bool):
         return float(node.value)
     if isinstance(node, ast.Name):
-        if node.id not in env:
+        if node.id not in BOQ_VARIABLES or node.id not in env:
             raise FormulaError(f"unknown variable: {node.id}")
         return float(env[node.id])
     if isinstance(node, ast.BinOp) and type(node.op) in _BINOPS:

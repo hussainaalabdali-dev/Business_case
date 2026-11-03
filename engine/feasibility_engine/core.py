@@ -3,7 +3,7 @@
 import math
 from typing import Any
 
-from .expr import evaluate
+from .expr import FormulaError, evaluate
 from .irr import irr_annual, npv_at
 from .models import Alternatives, EngineInputs, EngineResult, OwnerShareRow
 
@@ -72,7 +72,10 @@ def run(inp: EngineInputs | dict[str, Any]) -> EngineResult:
     groups: dict[str, float] = {}
     SubItems = 0.0
     for it in g.boq:
-        amt = evaluate(it.qty_formula, env) * evaluate(it.rate, env)
+        try:
+            amt = evaluate(it.qty_formula, env) * evaluate(it.rate, env)
+        except FormulaError as exc:
+            raise FormulaError(f"BOQ item {it.code} ({it.item}): {exc}") from exc
         SubItems += amt
         key = it.code[0]  # group letter (أ ب ج د ه و ز)
         groups[key] = groups.get(key, 0.0) + amt

@@ -43,7 +43,12 @@ def irr_monthly(flows: Sequence[float]) -> float | None:
 
 
 def annualise(r: float | None) -> float | None:
-    return None if r is None else (1 + r) ** 12 - 1
+    """A root at the bottom of the search range annualises to -100%: the flows never recover the capital.
+    ENGINE_SPEC §0 treats that (Excel -1) as no IRR, so it is returned as None."""
+    if r is None:
+        return None
+    a = (1 + r) ** 12 - 1
+    return None if a <= -1 + 1e-6 else a
 
 
 def irr_annual(flows: Sequence[float]) -> float | None:

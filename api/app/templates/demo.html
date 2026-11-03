@@ -38,8 +38,8 @@ p { text-align: justify; margin: 0 0 2.5mm; }
   <div class="kpi"><div class="l">إجمالي التكلفة (مليون ريال)</div><div class="v num">{{ r.TotCost | millions }}</div></div>
   <div class="kpi"><div class="l">صافي الربح (مليون ريال)</div><div class="v num">{{ r.Profit | millions }}</div></div>
   <div class="kpi"><div class="l">الهامش على التكلفة</div><div class="v num">{{ r.Margin | pct }}</div></div>
-  <div class="kpi"><div class="l">IRR المشروع</div><div class="v num">{{ r.project_irr | pct }}</div></div>
-  <div class="kpi"><div class="l">IRR الشريك المطوّر</div><div class="v num">{{ r.dev_partner_irr | pct }}</div></div>
+  <div class="kpi"><div class="l">IRR المشروع</div><div class="v num">{{ r.project_irr | irr }}</div>{% if r.project_irr is none %}<div class="l">{{ NO_IRR_NOTE }} — الربح {{ r.Profit | millions }} مليون، المضاعف {{ '%.2f' % r.equity_multiple }}×</div>{% endif %}</div>
+  <div class="kpi"><div class="l">IRR الشريك المطوّر</div><div class="v num">{{ r.dev_partner_irr | irr }}</div>{% if r.dev_partner_irr is none %}<div class="l">{{ NO_IRR_NOTE }} — صافي المطوّر {{ r.dev_partner_net | millions }} مليون، المضاعف {{ '%.2f' % r.equity_multiple }}×</div>{% endif %}</div>
   <div class="kpi"><div class="l">رأس مال المستثمر (مليون ريال)</div><div class="v num">{{ r.InvE | millions }}</div></div>
   <div class="kpi"><div class="l">أقصى سعر للأرض عند IRR ‏18% (مليون)</div><div class="v num">{{ r.max_land_irr_18 | millions }}</div></div>
 </div>
@@ -66,20 +66,23 @@ p { text-align: justify; margin: 0 0 2.5mm; }
 
 <h2>اختبار الضغط (22 اختباراً)</h2>
 <table>
-  <thead><tr><th>#</th><th>الاختبار</th><th class="n">الربح (مليون)</th><th class="n">الهامش</th><th class="n">IRR المشروع</th><th class="n">صافي المطوّر بعد التمويل (مليون)</th><th class="n">مضاعف المالك</th></tr></thead>
+  <thead><tr><th>#</th><th>الاختبار</th><th class="n">الربح (مليون)</th><th class="n">الهامش</th><th class="n">IRR المشروع</th><th class="n">IRR المطوّر</th><th class="n">مضاعف رأس المال</th><th class="n">صافي المطوّر بعد التمويل (مليون)</th><th class="n">مضاعف المالك</th></tr></thead>
   <tbody>
   {% for s in stress %}
     <tr>
       <td class="num">{{ s.n }}</td><td>{{ s.label | isonum }}</td>
       <td class="n"><span class="num {{ 'neg' if s.Profit < 0 }}">{{ s.Profit | millions }}</span></td>
       <td class="n"><span class="num {{ 'neg' if s.Margin < 0 }}">{{ s.Margin | pct }}</span></td>
-      <td class="n"><span class="num">{{ s.project_irr | pct }}</span></td>
+      <td class="n"><span class="num">{{ s.project_irr | irr }}</span></td>
+      <td class="n">{% if s.dev_partner_irr is none %}<span title="{{ NO_IRR_NOTE }}">لا يوجد*</span>{% else %}<span class="num">{{ s.dev_partner_irr | pct }}</span>{% endif %}</td>
+      <td class="n"><span class="num">{{ '%.2f' % s.equity_multiple }}×</span></td>
       <td class="n"><span class="num">{{ s.dev_partner_net_after_fin | millions }}</span></td>
       <td class="n"><span class="num">{{ '%.2f' % s.owner_multiple if s.owner_multiple is not none else '—' }}×</span></td>
     </tr>
   {% endfor %}
   </tbody>
 </table>
+{% if stress | selectattr('dev_partner_irr', 'none') | list %}<p style="font-size:8.5pt;color:#5b6475">* لا يوجد: {{ NO_IRR_NOTE }}. انظر الربح أو الخسارة بالريال ومضاعف رأس المال في نفس السطر.</p>{% endif %}
 
 <h2>نص عربي طويل لاختبار التشكيل والالتفاف</h2>
 <p>تُعدّ دراسة الجدوى أداةً لاتخاذ القرار، لا شهادةً على قيمة العقار. فهي تجمع افتراضات السوق — كأسعار البيع والإيجار ومعدّلات الاستيعاب — مع تكاليف البناء وجدول التنفيذ وشروط الشراكة، ثم تقيس أثر كل افتراض على العائد. ولأن الافتراضات تتغيّر، فإن قيمة الدراسة الحقيقية في اختبار الضغط: ماذا يحدث لو انخفضت الأسعار عشرة في المئة؟ أو تأخّر التنفيذ ستة أشهر؟ أو ارتفعت تكلفة التمويل؟ الإجابة عن هذه الأسئلة قبل التوقيع هي ما يحمي المطوّر من الالتزام بأرض لا تحتمل أسوأ الاحتمالات المعقولة.</p>

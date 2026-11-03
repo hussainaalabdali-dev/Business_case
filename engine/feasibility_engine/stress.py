@@ -63,6 +63,7 @@ def run_stress(inp: EngineInputs | dict[str, Any]) -> StressResult:
                 n=n, label=test.label, changes=changes, Profit=r.Profit, Margin=r.Margin, project_irr=r.project_irr,
                 project_npv=r.project_npv, InvE=r.InvE, dev_partner_net_after_fin=r.dev_partner_net_after_fin,
                 dev_partner_irr=r.dev_partner_irr, owner_multiple=r.owner_multiple,
+                equity_multiple=r.equity_multiple,
             )
         )
     return StressResult(tests=rows)

@@ -11,3 +11,12 @@ def amount(v: float | None) -> str:
 
 def pct(v: float | None, digits: int = 1) -> str:
     return "—" if v is None else f"{v * 100:,.{digits}f}%"
+
+
+NO_IRR = "لا يوجد"
+NO_IRR_NOTE = "التدفقات لا تسترد رأس المال"
+
+
+def irr(v: float | None) -> str:
+    """IRR null is shown as 'لا يوجد' (never -100%); callers must show profit and multiple next to it."""
+    return NO_IRR if v is None else pct(v)
