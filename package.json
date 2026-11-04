@@ -1,0 +1,14 @@
+{
+  "name": "business-case",
+  "private": true,
+  "type": "module",
+  "workspaces": ["engine-ts", "worker"],
+  "scripts": {
+    "build": "node scripts/build-web.mjs",
+    "test": "npm test -w engine-ts && npm test -w worker",
+    "typecheck": "npm run typecheck -w engine-ts && npm run typecheck -w worker"
+  },
+  "devDependencies": {
+    "wrangler": "4.151.2"
+  }
+}

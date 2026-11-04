@@ -8,3 +8,7 @@ node_modules/
 .next/
 .env
 api/out/
+node_modules/
+web/dist/
+.wrangler/
+.dev.vars
