@@ -10,7 +10,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: npm, cache-dependency-path: engine-ts/package-lock.json }
       - run: pip install ruff -e "engine[dev]" -e "api[dev]"
+      - run: npm ci --prefix engine-ts
       - run: python -m playwright install --with-deps chromium
       - run: make test
         env: { PDF_TESTS: "1" }

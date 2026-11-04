@@ -1,4 +1,4 @@
-.PHONY: dev test test-engine test-api test-web fixtures-check migrate pdf-demo images lint
+.PHONY: dev test test-engine test-engine-ts test-api test-web fixtures-check migrate pdf-demo images lint
 
 PY ?= python3
 COMPOSE = docker compose -f docker-compose.yml -f docker-compose.dev.yml
@@ -16,13 +16,17 @@ test-engine:
 	cd engine && $(PY) -m pytest -q
 	cd engine && $(PY) -m mypy feasibility_engine
 
+test-engine-ts:
+	$(PY) engine-ts/tests/gen_crosscheck.py engine-ts/tests/.crosscheck.json
+	cd engine-ts && npm run typecheck && npm test
+
 test-api:
 	cd api && $(PY) -m pytest -q -s
 
 test-web:
 	@if [ -f web/package.json ]; then cd web && npm run typecheck && npm run lint; else echo "web: not scaffolded yet (Milestone 2)"; fi
 
-test: fixtures-check lint test-engine test-api test-web
+test: fixtures-check lint test-engine test-engine-ts test-api test-web
 
 migrate:
 	@if [ -f web/package.json ]; then cd web && npx prisma migrate deploy; else echo "migrate: Prisma arrives in Milestone 2"; fi
