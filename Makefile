@@ -28,7 +28,7 @@ test-api:
 	cd api && $(PY) -m pytest -q -s
 
 test-web:
-	@if [ -f web/package.json ]; then cd web && npm run typecheck && npm run lint; else echo "web: not scaffolded yet (Milestone 2)"; fi
+	npm run typecheck -w web && npm test -w web && npm run build -w web
 
 test: fixtures-check lint test-engine test-engine-ts test-worker test-api test-web
 

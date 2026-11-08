@@ -13,7 +13,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "business-case-db",
+      "database_name": "businesscase",
       "database_id": "3de62444-5d56-4d3c-b600-917ea8adf3d4",
       "migrations_dir": "worker/migrations"
     }
