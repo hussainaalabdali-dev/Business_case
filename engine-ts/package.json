@@ -1,0 +1,17 @@
+{
+  "name": "@business-case/engine-ts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TypeScript port of docs/ENGINE_SPEC.md. Must match fixtures/ (CLAUDE.md rules 1 and 7).",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "22.15.30",
+    "typescript": "5.8.3",
+    "vitest": "3.2.4"
+  }
+}

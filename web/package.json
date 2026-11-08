@@ -1,0 +1,21 @@
+{
+  "name": "@business-case/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "preact": "10.26.9"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "2.10.2",
+    "typescript": "5.8.3",
+    "vite": "6.3.5",
+    "vitest": "3.2.4"
+  }
+}

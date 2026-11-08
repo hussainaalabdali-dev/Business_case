@@ -1,0 +1,29 @@
+// Cloudflare Worker "business-case": static site + /api/* (save/load projects only; no calculations).
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "business-case",
+  "main": "worker/src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./web/dist",
+    "binding": "ASSETS",
+    "run_worker_first": ["/api/*"],
+    "not_found_handling": "single-page-application"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "businesscase",
+      "database_id": "3de62444-5d56-4d3c-b600-917ea8adf3d4",
+      "migrations_dir": "worker/migrations"
+    }
+  ],
+  // Not secrets. From Zero Trust → Access → Applications → business-case.
+  // If either is empty, /api/* answers 503 (fails closed).
+  "vars": {
+    "ACCESS_TEAM_DOMAIN": "gitskok.cloudflareaccess.com",
+    "ACCESS_AUD": "f1db5e93f2f6b21d775d2561872a9d994905d680fa3bd0c3297f140f3a115143"
+  },
+  "preview_urls": false,
+  "workers_dev": true
+}
