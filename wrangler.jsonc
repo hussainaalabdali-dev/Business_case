@@ -18,11 +18,11 @@
       "migrations_dir": "worker/migrations"
     }
   ],
-  // Not secrets. Fill from Zero Trust → Access → Applications → business-case.
-  // While empty, /api/* answers 503 (fails closed).
+  // Not secrets. From Zero Trust → Access → Applications → business-case.
+  // If either is empty, /api/* answers 503 (fails closed).
   "vars": {
-    "ACCESS_TEAM_DOMAIN": "",
-    "ACCESS_AUD": ""
+    "ACCESS_TEAM_DOMAIN": "gitskok.cloudflareaccess.com",
+    "ACCESS_AUD": "f1db5e93f2f6b21d775d2561872a9d994905d680fa3bd0c3297f140f3a115143"
   },
   "preview_urls": false,
   "workers_dev": true
