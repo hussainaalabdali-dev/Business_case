@@ -1,4 +1,4 @@
-/** Input metadata: Arabic label, unit, kind and where it shows. Values come from the Abhur example (labelled as assumptions). */
+/** Input metadata: Arabic label, unit, kind and where it shows. */
 import type { EngineInputs } from "../../engine-ts/src";
 
 export type Kind = "money" | "num" | "pct" | "int" | "flag" | "choice";
@@ -20,15 +20,19 @@ const YESNO = [{ value: 1, label: "نعم" }, { value: 0, label: "لا" }];
 
 /** The ~15 visible inputs, by wizard step (0-based). */
 export const VISIBLE: Record<0 | 1, { title?: string; fields: Field[] }[]> = {
-  0: [{
-    fields: [
+  0: [
+    { title: "الأرض والمسطحات", fields: [
       f("LandArea", "مساحة الأرض", "num", "م²"),
-      f("LandValue", "قيمة الأرض (حصة المالك)", "money", "ريال"),
-      f("LandMkt", "سعر السوق للمتر", "money", "ريال/م²", { hint: "سعر متر الأرض في الحي حسب الصفقات" }),
-      f("FAR", "مسطحات البناء داخل النسبة", "num", "م²", { hint: "إجمالي المسطح المسموح فوق الأرض" }),
-      f("ShopGFA", "مساحة المعارض", "num", "م²"),
-    ],
-  }],
+      f("FAR", "المسطح المسموح (معامل الكتلة)", "num", "م²", { hint: "إجمالي المسطح المسموح فوق الأرض حسب الاشتراطات" }),
+      f("ResFloors", "عدد الأدوار السكنية المتكررة", "int"),
+      f("ShopGFA", "مساحة المعارض الأرضية", "num", "م²", { hint: "اكتب 0 إذا ما فيه معارض" }),
+      f("MezzPct", "نسبة الميزانين من المعارض", "pct", "%"),
+    ] },
+    { title: "قيمة الأرض", fields: [
+      f("LandValue", "قيمة الأرض المطلوبة (حصة المالك)", "money", "ريال"),
+      f("LandMkt", "القيمة السوقية للأرض", "money", "ريال/م²", { hint: "من صفقات الحي (سهيل أو البورصة العقارية)" }),
+    ] },
+  ],
   1: [
     { title: "الإيرادات", fields: [
       f("PriceRes", "سعر بيع السكني", "money", "ريال/م²", { scenario: true }),
@@ -37,6 +41,8 @@ export const VISIBLE: Record<0 | 1, { title?: string; fields: Field[] }[]> = {
     { title: "التكلفة", fields: [
       f("RateAbove", "سعر بناء المتر فوق الأرض", "money", "ريال/م²"),
       f("RateBase", "سعر بناء المتر في البدروم", "money", "ريال/م²"),
+      f("RateGP", "سعر بناء المتر للمواقف الأرضية", "money", "ريال/م²", { hint: "اكتب 0 إذا ما فيه مواقف أرضية" }),
+      f("ExtWorks", "أعمال خارجية وتوصيلات", "money", "ريال", { hint: "مبلغ مقطوع" }),
     ] },
     { title: "التوقيت", fields: [
       f("ConBase", "مدة البناء", "int", "شهر"),
@@ -57,8 +63,6 @@ export const VISIBLE: Record<0 | 1, { title?: string; fields: Field[] }[]> = {
 export const ADVANCED: Record<0 | 1 | 2, { title: string; fields: Field[] }[]> = {
   0: [
     { title: "المسطحات والكفاءة", fields: [
-      f("MezzPct", "الميزانين كنسبة من المعارض", "pct", "%"),
-      f("ResFloors", "عدد الأدوار السكنية", "int"),
       f("BasePct", "البدروم كنسبة من الأرض", "pct", "%"),
       f("Coverage", "نسبة التغطية", "pct", "%"),
       f("ParkM2", "مساحة الموقف الواحد", "num", "م²"),
@@ -91,8 +95,6 @@ export const ADVANCED: Record<0 | 1 | 2, { title: string; fields: Field[] }[]> =
     { title: "تكاليف أخرى", fields: [
       f("CostMode", "طريقة حساب تكلفة البناء", "choice", undefined, { options: [
         { value: 1, label: "سعر المتر (تقديري)" }, { value: 0, label: "جدول الكميات" }] }),
-      f("RateGP", "سعر بناء المتر للمواقف الأرضية", "money", "ريال/م²"),
-      f("ExtWorks", "أعمال خارجية وتوصيلات", "money", "ريال"),
       f("DesignPct", "التصميم", "pct", "% من البناء"),
       f("PermitPct", "التراخيص", "pct", "% من البناء"),
       f("ContPct", "الاحتياطي", "pct", "% من البناء"),

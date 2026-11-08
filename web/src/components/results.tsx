@@ -24,7 +24,25 @@ export function Irr({ v, r }: { v: number | null; r: EngineResult }) {
   return <strong class={`num ${v < 0 ? "neg" : ""}`}>{pct(v)}</strong>;
 }
 
-export function ResultsPanel({ r, verdict, tgt, error }: { r: EngineResult | null; verdict: Verdict | null; tgt: number; error: string | null }) {
+export function ResultsPanel({ r, verdict, tgt, error, missing, onGo }: {
+  r: EngineResult | null; verdict: Verdict | null; tgt: number; error: string | null;
+  missing: { key: string; label: string; step: number }[]; onGo: (step: number) => void;
+}) {
+  if (missing.length) {
+    return (
+      <aside class="panel" aria-live="polite">
+        <h2>{ar.results}</h2>
+        <p class="verdict-text">{ar.missingTitle}:</p>
+        <ul class="missing">
+          {missing.map(m => (
+            <li><button type="button" class="link" onClick={() => onGo(m.step)}>{m.label}</button>
+              <small class="muted"> · {ar.goToStep(m.step + 1)}</small></li>
+          ))}
+        </ul>
+        <p class="disclaimer">{ar.disclaimer}</p>
+      </aside>
+    );
+  }
   if (error || !r || !verdict) {
     return (
       <aside class="panel" aria-live="polite">

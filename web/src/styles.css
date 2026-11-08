@@ -162,3 +162,16 @@ td.num { text-align: left; }
 .plist button { padding: 5px 10px; font-size: .85rem; }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* text inputs, scorecard, missing list */
+.text-input, textarea { width: 100%; min-width: 0; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); font: inherit; color: inherit; }
+textarea { resize: vertical; line-height: 1.6; }
+.field.span2 { grid-column: 1 / -1; }
+.num-input.empty { border-style: dashed; }
+.tag.need { color: var(--bad); background: var(--bad-bg); }
+.score td.w-num { width: 90px; }
+.score td.w-num input { width: 80px; }
+.score td:last-child { min-width: 220px; white-space: normal; }
+.score tfoot th { color: var(--ink); border-top: 1.5px solid var(--ink); }
+.missing { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: .88rem; }
+button.link { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
