@@ -1,36 +1,127 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 import { DEFAULT_THRESHOLDS, decide, defaultLandValues } from "../../../engine-ts/src";
-import type { BoqItem, EngineInputs, EngineResult, Grid, StressRow, Thresholds } from "../../../engine-ts/src";
+import type { EngineInputs, EngineResult, Grid, StressRow, Thresholds } from "../../../engine-ts/src";
 import { ADVANCED, VISIBLE } from "../fields";
 import { amount, editable, millions, mult, parseNumber, pct } from "../format";
 import { ar } from "../i18n/ar";
-import { staleScenarios } from "../example";
-import { Advanced, FieldGroup } from "./inputs";
+import { scoreClass } from "../project";
+import type { Draft, DraftBoq, Meta } from "../project";
+import { Advanced, FieldGroup, NumberBox, TextField } from "./inputs";
+import type { SetValues } from "./inputs";
 import { Irr, IsoNum, VerdictPill } from "./results";
 
-type Update = (patch: Partial<EngineInputs>) => void;
-interface StepProps { inputs: EngineInputs; update: Update; r: EngineResult | null }
+export interface StepProps {
+  draft: Draft; set: SetValues; setMeta: (m: Partial<Meta>) => void; setBoq: (b: DraftBoq[]) => void;
+  inputs: EngineInputs | null; r: EngineResult | null; scenariosComplete: boolean;
+}
 
-/* ---------- Step 1: تشخيص الفرصة ---------- */
-export function Step1({ inputs, update, r }: StepProps) {
+function NeedData() {
+  return <p class="warn">{ar.completeFirst}</p>;
+}
+
+/* ---------- Step 1: تشخيص الفرصة (البيانات الأساسية) ---------- */
+function Scorecard({ draft, setMeta }: Pick<StepProps, "draft" | "setMeta">) {
+  const rows = draft.meta.scorecard;
+  const setRow = (i: number, patch: Partial<Meta["scorecard"][number]>) =>
+    setMeta({ scorecard: rows.map((r, j) => (j === i ? { ...r, ...patch } : r)) });
+  const weightSum = rows.reduce((a, r) => a + r.weight, 0);
+  const scored = rows.filter(r => r.score !== null);
+  const total = rows.reduce((a, r) => a + r.weight * (r.score ?? 0) * 10, 0);
+  return (
+    <section class="card">
+      <h3>{ar.scorecard}</h3>
+      <p class="hint">{ar.scorecardHint}</p>
+      <div class="table-scroll">
+        <table class="score">
+          <thead><tr><th>{ar.criterion}</th><th>{ar.weight}</th><th>{ar.score}</th><th>{ar.weighted}</th><th>{ar.justification}</th></tr></thead>
+          <tbody>
+            {rows.map((r, i) => (
+              <tr>
+                <td>{r.label}</td>
+                <td class="w-num"><NumberBox id={`sc-w-${r.key}`} label={`${ar.weight} ${r.label}`} kind="pct" value={r.weight}
+                  onChange={n => setRow(i, { weight: n ?? 0 })} /></td>
+                <td class="w-num"><NumberBox id={`sc-s-${r.key}`} label={`${ar.score} ${r.label}`} kind="num" value={r.score} placeholder="0–10"
+                  onChange={n => setRow(i, { score: n === null ? null : Math.max(0, Math.min(10, n)) })} /></td>
+                <td class="num">{r.score === null ? "—" : (r.weight * r.score * 10).toFixed(1)}</td>
+                <td><input class="text-input" aria-label={`${ar.justification} ${r.label}`} value={r.note}
+                  onInput={e => setRow(i, { note: (e.target as HTMLInputElement).value })} /></td>
+              </tr>
+            ))}
+          </tbody>
+          <tfoot><tr>
+            <th>{ar.total}</th>
+            <th class={`num ${Math.abs(weightSum - 1) > 1e-6 ? "neg" : ""}`}>{pct(weightSum, 0)}</th>
+            <th></th>
+            <th class="num">{scored.length ? total.toFixed(1) : "—"}</th>
+            <th>{scored.length === rows.length ? <b>{scoreClass(total)}</b> : <span class="muted">{ar.scoreIncomplete}</span>}</th>
+          </tr></tfoot>
+        </table>
+      </div>
+      {Math.abs(weightSum - 1) > 1e-6 && <p class="hint neg">{ar.weightsNot100}</p>}
+    </section>
+  );
+}
+
+export function Step1({ draft, set, setMeta, r }: StepProps) {
+  const m = draft.meta;
+  const v = draft.values;
+  const t = (k: keyof Meta, label: string, multiline = false, placeholder?: string, dir?: "ltr" | "rtl") => (
+    <TextField id={`meta-${k}`} label={label} value={m[k] as string} multiline={multiline} placeholder={placeholder} dir={dir}
+      onInput={s => setMeta({ [k]: s } as Partial<Meta>)} />
+  );
+  const area = typeof v.LandArea === "number" ? v.LandArea : null;
+  const lv = typeof v.LandValue === "number" ? v.LandValue : null;
+  const mkt = typeof v.LandMkt === "number" ? v.LandMkt : null;
+  const marketValue = area !== null && mkt !== null ? area * mkt : null;
   return (
     <>
-      {VISIBLE[0].map(g => <FieldGroup title={g.title} fields={g.fields} inputs={inputs} update={update} />)}
-      {r && (
-        <section class="card">
-          <h3>{ar.derived}</h3>
-          <dl class="facts">
+      <fieldset class="group">
+        <legend>{ar.location}</legend>
+        <div class="fields">
+          {t("city", ar.city)}
+          {t("district", ar.district)}
+          {t("street", ar.street)}
+          {t("mapUrl", ar.mapUrl, false, "https://maps.google.com/…", "ltr")}
+        </div>
+        {/^https?:\/\//.test(m.mapUrl) && <p class="hint"><a href={m.mapUrl} target="_blank" rel="noopener noreferrer">{ar.openMap}</a></p>}
+      </fieldset>
+
+      {VISIBLE[0].map(g => <FieldGroup title={g.title} fields={g.fields} values={v} set={set} />)}
+
+      <section class="card">
+        <h3>{ar.landCheck}</h3>
+        <dl class="facts">
+          <div><dt>{ar.landPerM2Ask}</dt><dd><span class="num">{area && lv !== null ? amount(lv / area) : "—"}</span> {ar.sarPerM2}</dd></div>
+          <div><dt>{ar.landMarketValue}</dt><dd><span class="num">{millions(marketValue)}</span> {ar.millionSar}</dd></div>
+          <div><dt>{ar.landVsMarket}</dt>
+            <dd class={`num ${lv !== null && marketValue && lv > marketValue ? "neg" : ""}`}>{lv !== null && marketValue ? pct(lv / marketValue - 1) : "—"}</dd></div>
+          {r && <>
             <div><dt>{ar.resGfa}</dt><dd><span class="num">{amount(r.ResGFA)}</span> م²</dd></div>
             <div><dt>{ar.sellable}</dt><dd><span class="num">{amount(r.SellTot)}</span> م²</dd></div>
             <div><dt>{ar.units}</dt><dd class="num">{amount(r.Units)}</dd></div>
-            <div><dt>{ar.landPerSellable}</dt><dd><span class="num">{amount(inputs.LandValue / r.SellTot)}</span> {ar.sarPerM2}</dd></div>
-            <div><dt>{ar.landMarketValue}</dt><dd><span class="num">{millions(r.alternatives.land_market_value)}</span> {ar.millionSar}</dd></div>
-            <div><dt>{ar.landVsMarket}</dt>
-              <dd class={`num ${r.alternatives.land_owner_vs_ask < 0 ? "neg" : ""}`}>{pct(inputs.LandValue / r.alternatives.land_market_value - 1)}</dd></div>
-          </dl>
-        </section>
-      )}
-      <Advanced>{ADVANCED[0].map(g => <FieldGroup title={g.title} fields={g.fields} inputs={inputs} update={update} />)}</Advanced>
+          </>}
+        </dl>
+      </section>
+
+      <fieldset class="group">
+        <legend>{ar.opportunityCard}</legend>
+        <div class="fields">
+          {t("property", ar.property, true, ar.propertyPh)}
+          {t("deal", ar.deal, true, ar.dealPh)}
+          {t("use", ar.use, true, ar.usePh)}
+          {t("goal", ar.goal, true, ar.goalPh)}
+          {t("issues", ar.issues, true, ar.issuesPh)}
+        </div>
+      </fieldset>
+
+      <Scorecard draft={draft} setMeta={setMeta} />
+
+      <fieldset class="group">
+        <legend>{ar.coachNotes}</legend>
+        <textarea aria-label={ar.coachNotes} rows={4} value={m.coachNotes} onInput={e => setMeta({ coachNotes: (e.target as HTMLTextAreaElement).value })} />
+      </fieldset>
+
+      <Advanced>{ADVANCED[0].map(g => <FieldGroup title={g.title} fields={g.fields} values={v} set={set} />)}</Advanced>
     </>
   );
 }
@@ -62,9 +153,8 @@ function CashChart({ r }: { r: EngineResult }) {
   );
 }
 
-function BoqTable({ inputs, update }: { inputs: EngineInputs; update: Update }) {
-  const set = (i: number, patch: Partial<BoqItem>) =>
-    update({ _boq: inputs._boq.map((b, j) => (j === i ? { ...b, ...patch } : b)) });
+function BoqTable({ boq, setBoq }: { boq: DraftBoq[]; setBoq: (b: DraftBoq[]) => void }) {
+  const set = (i: number, patch: Partial<DraftBoq>) => setBoq(boq.map((b, j) => (j === i ? { ...b, ...patch } : b)));
   return (
     <fieldset class="group">
       <legend>{ar.boqTitle}</legend>
@@ -72,14 +162,15 @@ function BoqTable({ inputs, update }: { inputs: EngineInputs; update: Update }) 
         <table class="boq">
           <thead><tr><th>{ar.boqCode}</th><th>{ar.boqItem}</th><th>{ar.boqQty}</th><th>{ar.boqUnit}</th><th>{ar.boqRate}</th></tr></thead>
           <tbody>
-            {inputs._boq.map((b, i) => (
+            {boq.map((b, i) => (
               <tr>
                 <td>{b.code}</td><td>{b.item}</td>
                 <td><input dir="ltr" aria-label={`${b.item} ${ar.boqQty}`} value={String(b.qty_formula)}
                   onChange={e => { const t = (e.target as HTMLInputElement).value; const n = parseNumber(t); set(i, { qty_formula: t.trim().startsWith("=") || n === null ? t : n }); }} /></td>
                 <td>{b.unit}</td>
-                <td><input dir="ltr" aria-label={`${b.item} ${ar.boqRate}`} value={typeof b.rate === "number" ? editable(b.rate) : b.rate}
-                  onChange={e => { const t = (e.target as HTMLInputElement).value; const n = parseNumber(t); set(i, { rate: t.trim().startsWith("=") || n === null ? t : n }); }} /></td>
+                <td><input dir="ltr" aria-label={`${b.item} ${ar.boqRate}`} value={b.rate === null ? "" : typeof b.rate === "number" ? editable(b.rate) : b.rate}
+                  onChange={e => { const t = (e.target as HTMLInputElement).value; const n = parseNumber(t);
+                    set(i, { rate: t.trim() === "" ? null : t.trim().startsWith("=") || n === null ? t : n }); }} /></td>
               </tr>
             ))}
           </tbody>
@@ -89,12 +180,12 @@ function BoqTable({ inputs, update }: { inputs: EngineInputs; update: Update }) 
   );
 }
 
-export function Step2({ inputs, update, r }: StepProps) {
+export function Step2({ draft, set, setBoq, inputs, r }: StepProps) {
   return (
     <>
-      {VISIBLE[1].map(g => <FieldGroup title={g.title} fields={g.fields} inputs={inputs} update={update} />)}
-      <p class="note">{inputs.CostMode === 1 ? ar.costPerM2Note : ar.boqActive}</p>
-      {r && (
+      {VISIBLE[1].map(g => <FieldGroup title={g.title} fields={g.fields} values={draft.values} set={set} />)}
+      <p class="note">{draft.values.CostMode === 1 ? ar.costPerM2Note : ar.boqActive}</p>
+      {r && inputs && (
         <>
           <section class="card">
             <h3>{ar.costBreakdown}</h3>
@@ -112,8 +203,8 @@ export function Step2({ inputs, update, r }: StepProps) {
         </>
       )}
       <Advanced>
-        {ADVANCED[1].map(g => <FieldGroup title={g.title} fields={g.fields} inputs={inputs} update={update} scenarioAll />)}
-        <BoqTable inputs={inputs} update={update} />
+        {ADVANCED[1].map(g => <FieldGroup title={g.title} fields={g.fields} values={draft.values} set={set} scenarioAll />)}
+        <BoqTable boq={draft.boq} setBoq={setBoq} />
       </Advanced>
     </>
   );
@@ -122,7 +213,7 @@ export function Step2({ inputs, update, r }: StepProps) {
 /* ---------- Step 3: اختبار الضغط ---------- */
 interface StressOut { stress: StressRow[]; gridA: Grid; gridB: Grid }
 
-function useStress(inputs: EngineInputs, landValues: number[] | undefined) {
+function useStress(inputs: EngineInputs | null, landValues: number[] | undefined) {
   const [out, setOut] = useState<StressOut | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -140,6 +231,7 @@ function useStress(inputs: EngineInputs, landValues: number[] | undefined) {
   }, []);
   useEffect(() => {
     const id = ++seq.current;
+    if (!inputs) { setOut(null); return; }
     setBusy(true);
     const t = setTimeout(() => worker.current?.postMessage({ id, inputs, landValues }), 300);
     return () => clearTimeout(t);
@@ -168,17 +260,18 @@ function Heat({ grid, fmt, rowFmt, colFmt, title, good }: {
   );
 }
 
-export function Step3({ inputs, update }: StepProps) {
+export function Step3({ draft, set, inputs, scenariosComplete }: StepProps) {
   const [landText, setLandText] = useState<string | null>(null);
   const landValues = landText === null ? undefined
     : landText.split(/[,،]/).map(s => parseNumber(s)).filter((n): n is number => n !== null).map(n => n * 1e6);
   const { out, err, busy } = useStress(inputs, landValues && landValues.length ? landValues : undefined);
-  const stale = staleScenarios(inputs);
+  if (!inputs) return <><NeedData /><Advanced>{ADVANCED[2].map(g => <FieldGroup title={g.title} fields={g.fields} values={draft.values} set={set} />)}</Advanced></>;
   const tgt = inputs.TgtMargin;
   const defaultLand = defaultLandValues(inputs).map(v => editable(v / 1e6)).join("، ");
+  const scenRow = (n: number) => !scenariosComplete && n >= 15 && n <= 18;
   return (
     <>
-      {stale.length > 0 && <p class="warn">{ar.scenarioWarning}</p>}
+      {!scenariosComplete && <p class="warn">{ar.scenarioWarning}</p>}
       <section class="card">
         <h3>{ar.stressTitle} {busy && <small class="muted">{ar.stressRunning}</small>}</h3>
         {err && <p class="error">{ar.engineError} {err}</p>}
@@ -188,7 +281,9 @@ export function Step3({ inputs, update }: StepProps) {
               <thead><tr><th>#</th><th>{ar.colTest}</th><th>{ar.colProfit}</th><th>{ar.colMargin}</th>
                 <th>{ar.colProjIrr}</th><th>{ar.colDevIrr}</th><th>{ar.colDevNet}</th><th>{ar.colOwnerMult}</th></tr></thead>
               <tbody>
-                {out.stress.map(s => (
+                {out.stress.map(s => scenRow(s.n) ? (
+                  <tr><td class="num">{s.n}</td><td><IsoNum text={s.label} /></td><td colSpan={6} class="muted">{ar.scenarioMissingRow}</td></tr>
+                ) : (
                   <tr>
                     <td class="num">{s.n}</td><td><IsoNum text={s.label} /></td>
                     <td class={`num ${s.Profit < 0 ? "neg" : ""}`}>{millions(s.Profit)}</td>
@@ -218,7 +313,7 @@ export function Step3({ inputs, update }: StepProps) {
         <input id="grid-land" class="num-input" dir="ltr" value={landText ?? defaultLand}
           onInput={e => setLandText((e.target as HTMLInputElement).value)} />
       </div>
-      <Advanced>{ADVANCED[2].map(g => <FieldGroup title={g.title} fields={g.fields} inputs={inputs} update={update} />)}</Advanced>
+      <Advanced>{ADVANCED[2].map(g => <FieldGroup title={g.title} fields={g.fields} values={draft.values} set={set} />)}</Advanced>
     </>
   );
 }
@@ -227,7 +322,7 @@ export function Step3({ inputs, update }: StepProps) {
 export function Step4({ inputs, r, licence, setLicence, th, setTh }: StepProps & {
   licence: number; setLicence: (n: number) => void; th: Thresholds; setTh: (t: Thresholds) => void;
 }) {
-  if (!r) return null;
+  if (!r || !inputs) return <NeedData />;
   const d = decide(inputs, r, licence, th);
   const thKey: Record<string, keyof Thresholds> = { price_res: "price_res_min", land_value: "land_value_max", hard: "hard_max" };
   const fmtCond = (k: string, v: number) => (k === "margin" || k === "vat_nr" ? pct(v) : k === "licence" || k === "early_rec" ? (v ? ar.yes : ar.no) : amount(v));

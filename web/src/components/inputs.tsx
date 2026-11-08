@@ -1,57 +1,60 @@
 import { useEffect, useState } from "preact/hooks";
-import type { EngineInputs, ScenarioValue } from "../../../engine-ts/src";
-import type { Field } from "../fields";
+import type { Field, Key } from "../fields";
 import { editable, parseNumber } from "../format";
 import { ar } from "../i18n/ar";
-import { ABHUR } from "../example";
+import { generalDefault, PROJECT_KEYS } from "../project";
+import type { Num, ScenNum, Val } from "../project";
 
-type Update = (patch: Partial<EngineInputs>) => void;
+export type SetValues = (patch: Partial<Record<Key, Val>>) => void;
 
-function NumberBox({ id, value, kind, onChange, label }: {
-  id: string; value: number; kind: Field["kind"]; onChange: (v: number) => void; label: string;
+export function NumberBox({ id, value, kind, onChange, label, placeholder }: {
+  id: string; value: Num; kind: Field["kind"]; onChange: (v: Num) => void; label: string; placeholder?: string;
 }) {
   const scale = kind === "pct" ? 100 : 1;
-  const shown = editable(+(value * scale).toFixed(8));
+  const shown = value === null ? "" : editable(+(value * scale).toFixed(8));
   const [text, setText] = useState(shown);
   const [focused, setFocused] = useState(false);
   useEffect(() => { if (!focused) setText(shown); }, [shown, focused]);
   return (
-    <input id={id} class="num-input" type="text" inputMode="decimal" dir="ltr" aria-label={label} value={text}
+    <input id={id} class={`num-input ${value === null ? "empty" : ""}`} type="text" inputMode="decimal" dir="ltr"
+      aria-label={label} value={text} placeholder={placeholder}
       onFocus={() => setFocused(true)}
       onBlur={() => { setFocused(false); setText(shown); }}
       onInput={e => {
         const t = (e.target as HTMLInputElement).value;
         setText(t);
+        if (t.trim() === "") { onChange(null); return; }
         const n = parseNumber(t);
         if (n !== null) onChange(kind === "int" ? Math.round(n) : n / scale);
       }} />
   );
 }
 
-function isDefault(f: Field, v: unknown): boolean {
-  return JSON.stringify(v) === JSON.stringify(ABHUR[f.key]);
+function Tag({ field, v }: { field: Field; v: Val }) {
+  const empty = v === null || (typeof v === "object" && v.base === null);
+  if (PROJECT_KEYS.has(field.key)) return empty ? <span class="tag need">{ar.required}</span> : null;
+  const def = generalDefault(field.key);
+  return JSON.stringify(def) === JSON.stringify(v) ? <span class="tag" title={ar.generalHint}>{ar.generalAssumption}</span> : null;
 }
 
-export function FieldRow({ field, inputs, update, scenarioAll = false }: {
-  field: Field; inputs: EngineInputs; update: Update; scenarioAll?: boolean;
+export function FieldRow({ field, values, set, scenarioAll = false }: {
+  field: Field; values: Record<Key, Val>; set: SetValues; scenarioAll?: boolean;
 }) {
-  if (field.showIf && !field.showIf(inputs)) return null;
-  const v = inputs[field.key] as number | ScenarioValue;
+  const v = values[field.key];
+  if (field.showIf && !field.showIf(values as never)) return null;
   const id = `in-${field.key}${scenarioAll ? "-all" : ""}`;
-  const tag = isDefault(field, v) ? <span class="tag" title={ar.advancedHint}>{ar.assumption}</span> : null;
 
   let control;
   if (field.kind === "flag" || field.kind === "choice") {
     control = (
       <div class="seg" role="group" aria-labelledby={`${id}-l`}>
         {field.options!.map(o => (
-          <button type="button" aria-pressed={v === o.value} onClick={() => update({ [field.key]: o.value } as Partial<EngineInputs>)}>
-            {o.label}
-          </button>
+          <button type="button" aria-pressed={v === o.value} onClick={() => set({ [field.key]: o.value })}>{o.label}</button>
         ))}
       </div>
     );
-  } else if (field.scenario && typeof v === "object") {
+  } else if (field.scenario && v !== null && typeof v === "object") {
+    const sv = v as ScenNum;
     const keys = scenarioAll ? (["conservative", "base", "optimistic"] as const) : (["base"] as const);
     const names = { conservative: "متحفظ", base: "أساسي", optimistic: "متفائل" };
     control = (
@@ -59,22 +62,21 @@ export function FieldRow({ field, inputs, update, scenarioAll = false }: {
         {keys.map(k => (
           <label class="scen-cell">
             {scenarioAll && <span class="scen-name">{names[k]}</span>}
-            <NumberBox id={`${id}-${k}`} label={`${field.label} ${names[k]}`} value={v[k]} kind={field.kind}
-              onChange={n => update({ [field.key]: { ...v, [k]: n } } as Partial<EngineInputs>)} />
+            <NumberBox id={`${id}-${k}`} label={`${field.label} ${names[k]}`} value={sv[k]} kind={field.kind}
+              onChange={n => set({ [field.key]: { ...sv, [k]: n } })} />
           </label>
         ))}
       </div>
     );
   } else {
-    control = <NumberBox id={id} label={field.label} value={v as number} kind={field.kind}
-      onChange={n => update({ [field.key]: n } as Partial<EngineInputs>)} />;
+    control = <NumberBox id={id} label={field.label} value={v as Num} kind={field.kind} onChange={n => set({ [field.key]: n })} />;
   }
 
   return (
     <div class="field">
       <div class="field-head">
         <label id={`${id}-l`} for={field.kind === "flag" || field.kind === "choice" || field.scenario ? undefined : id}>{field.label}</label>
-        {tag}
+        <Tag field={field} v={v} />
       </div>
       <div class="field-ctl">
         {control}
@@ -85,16 +87,29 @@ export function FieldRow({ field, inputs, update, scenarioAll = false }: {
   );
 }
 
-export function FieldGroup({ title, fields, inputs, update, scenarioAll }: {
-  title?: string; fields: Field[]; inputs: EngineInputs; update: Update; scenarioAll?: boolean;
+export function FieldGroup({ title, fields, values, set, scenarioAll }: {
+  title?: string; fields: Field[]; values: Record<Key, Val>; set: SetValues; scenarioAll?: boolean;
 }) {
   return (
     <fieldset class="group">
       {title && <legend>{title}</legend>}
       <div class="fields">
-        {fields.map(fl => <FieldRow field={fl} inputs={inputs} update={update} scenarioAll={scenarioAll} />)}
+        {fields.map(fl => <FieldRow field={fl} values={values} set={set} scenarioAll={scenarioAll} />)}
       </div>
     </fieldset>
+  );
+}
+
+export function TextField({ id, label, value, onInput, multiline = false, placeholder, dir }: {
+  id: string; label: string; value: string; onInput: (s: string) => void; multiline?: boolean; placeholder?: string; dir?: "ltr" | "rtl";
+}) {
+  return (
+    <div class={`field ${multiline ? "span2" : ""}`}>
+      <label class="field-head" for={id}>{label}</label>
+      {multiline
+        ? <textarea id={id} rows={3} value={value} placeholder={placeholder} onInput={e => onInput((e.target as HTMLTextAreaElement).value)} />
+        : <input id={id} class="text-input" value={value} placeholder={placeholder} dir={dir} onInput={e => onInput((e.target as HTMLInputElement).value)} />}
+    </div>
   );
 }
 

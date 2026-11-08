@@ -1,20 +1,27 @@
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { quickVerdict, run } from "../../engine-ts/src";
-import type { EngineInputs, EngineResult, Thresholds } from "../../engine-ts/src";
+import type { EngineResult, Thresholds } from "../../engine-ts/src";
 import { api, ApiError } from "./api";
 import type { Summary } from "./api";
 import { ResultsPanel } from "./components/results";
 import { INITIAL_THRESHOLDS, Step1, Step2, Step3, Step4 } from "./components/steps";
-import { newProjectInputs } from "./example";
+import type { Key } from "./fields";
+import { blankDraft, fromStored, toEngine } from "./project";
+import type { Draft, DraftBoq, Meta, Val } from "./project";
 import { ar } from "./i18n/ar";
 
 type SaveState = "idle" | "dirty" | "saving" | "saved" | "error" | "unavailable";
-const DRAFT_KEY = "bc-draft-v1";
+const DRAFT_KEY = "bc-draft-v2";
 
-function loadDraft(): { name: string; inputs: EngineInputs; id: string | null } | null {
-  try { const s = localStorage.getItem(DRAFT_KEY); return s ? JSON.parse(s) : null; } catch { return null; }
+function loadDraft(): { name: string; draft: Draft; id: string | null } | null {
+  try {
+    const s = localStorage.getItem(DRAFT_KEY);
+    if (!s) return null;
+    const d = JSON.parse(s) as { name: string; draft: unknown; id: string | null };
+    return { ...d, draft: fromStored(d.draft) };
+  } catch { return null; }
 }
-function storeDraft(d: { name: string; inputs: EngineInputs; id: string | null }) {
+function storeDraft(d: { name: string; draft: Draft; id: string | null }) {
   try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch { /* storage blocked: fine */ }
 }
 
@@ -54,7 +61,7 @@ function Projects({ onOpen, onClose, currentId }: { onOpen: (id: string) => void
 
 export function App() {
   const draft = useMemo(loadDraft, []);
-  const [inputs, setInputs] = useState<EngineInputs>(draft?.inputs ?? newProjectInputs());
+  const [project, setProject] = useState<Draft>(draft?.draft ?? blankDraft());
   const [name, setName] = useState(draft?.name ?? "");
   const [projectId, setProjectId] = useState<string | null>(draft?.id ?? null);
   const [step, setStep] = useState(0);
@@ -68,16 +75,22 @@ export function App() {
 
   useEffect(() => { api.me().then(m => setEmail(m.email)).catch(() => setSave("unavailable")); }, []);
 
+  const conv = useMemo(() => toEngine(project), [project]);
+  const inputs = conv.inputs;
   const { r, error } = useMemo((): { r: EngineResult | null; error: string | null } => {
+    if (!inputs) return { r: null, error: null };
     try { return { r: run(inputs), error: null }; } catch (e) { return { r: null, error: e instanceof Error ? e.message : String(e) }; }
   }, [inputs]);
-  const verdict = r ? quickVerdict(r.Margin, inputs.TgtMargin) : null;
+  const tgt = typeof project.values.TgtMargin === "number" ? project.values.TgtMargin : 0;
+  const verdict = r ? quickVerdict(r.Margin, tgt) : null;
 
-  const update = (patch: Partial<EngineInputs>) => setInputs(prev => ({ ...prev, ...patch }));
+  const set = (patch: Partial<Record<Key, Val>>) => setProject(p => ({ ...p, values: { ...p.values, ...patch } }));
+  const setMeta = (patch: Partial<Meta>) => setProject(p => ({ ...p, meta: { ...p.meta, ...patch } }));
+  const setBoq = (boq: DraftBoq[]) => setProject(p => ({ ...p, boq }));
 
   // Local draft always; server autosave (debounced) when signed in.
   useEffect(() => {
-    storeDraft({ name, inputs, id: projectId });
+    storeDraft({ name, draft: project, id: projectId });
     if (skipSave.current) { skipSave.current = false; return; }
     if (save === "unavailable") return;
     setSave("dirty");
@@ -85,31 +98,31 @@ export function App() {
       setSave("saving");
       try {
         const nm = name.trim() || ar.untitled;
-        if (projectId) await api.update(projectId, nm, inputs);
-        else setProjectId((await api.create(nm, inputs)).id);
+        if (projectId) await api.update(projectId, nm, project);
+        else setProjectId((await api.create(nm, project)).id);
         setSave("saved");
       } catch (e) {
         setSave(e instanceof ApiError && (e.status === 503 || e.status === 403) ? "unavailable" : "error");
       }
     }, 1000);
     return () => clearTimeout(t);
-  }, [inputs, name]);
+  }, [project, name]);
 
   const startNew = () => {
     skipSave.current = true;
-    setInputs(newProjectInputs()); setName(""); setProjectId(null); setStep(0); setShowIntro(true);
+    setProject(blankDraft()); setName(""); setProjectId(null); setStep(0); setShowIntro(true);
     if (save !== "unavailable") setSave("idle");
   };
   const openProject = async (id: string) => {
     const p = await api.get(id);
     skipSave.current = true;
-    setInputs(p.inputs); setName(p.name); setProjectId(p.id); setStep(0); setShowProjects(false); setShowIntro(false); setSave("saved");
+    setProject(fromStored(p.inputs)); setName(p.name); setProjectId(p.id); setStep(0); setShowProjects(false); setShowIntro(false); setSave("saved");
   };
 
   const saveLabel: Record<SaveState, string> = {
     idle: "", dirty: ar.unsaved, saving: ar.saving, saved: ar.saved, error: ar.saveFailed, unavailable: ar.saveUnavailable,
   };
-  const props = { inputs, update, r };
+  const props = { draft: project, set, setMeta, setBoq, inputs, r, scenariosComplete: conv.scenariosComplete };
 
   return (
     <div class="app">
@@ -135,7 +148,7 @@ export function App() {
 
       <div class="layout">
         <main class="work">
-          {showIntro && <p class="intro">{ar.newFromExample}</p>}
+          {showIntro && <p class="intro">{ar.newProjectIntro}</p>}
           <h1>{ar.steps[step]}</h1>
           <p class="muted">{ar.stepHints[step]}</p>
           {step === 0 && <Step1 {...props} />}
@@ -147,7 +160,7 @@ export function App() {
             <button type="button" disabled={step === 3} onClick={() => setStep(step + 1)}>{ar.next}</button>
           </div>
         </main>
-        <ResultsPanel r={r} verdict={verdict} tgt={inputs.TgtMargin} error={error} />
+        <ResultsPanel r={r} verdict={verdict} tgt={tgt} error={error} missing={conv.missing} onGo={setStep} />
       </div>
       <footer class="foot">{ar.disclaimer}</footer>
       {showProjects && <Projects onOpen={id => void openProject(id)} onClose={() => setShowProjects(false)} currentId={projectId} />}
